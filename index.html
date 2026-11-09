@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NIR Studio — 光谱定量分析</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+:root{--ink:#163843;--teal:#087e8b;--bg:#f4f8f9;--border:#dbe6e9;--muted:#64808a;--white:#fff}
+*{box-sizing:border-box}body{margin:0;font:14px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+header{padding:18px 32px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-size:23px;font-weight:800;letter-spacing:-.6px}.brand span{color:var(--teal)}
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:calc(100vh - 75px)}
+aside{background:#fff;border-right:1px solid var(--border);padding:22px 12px}nav button{width:100%;display:block;text-align:left;background:transparent;border:0;border-radius:10px;margin:5px 0;padding:13px 15px;color:var(--ink);cursor:pointer;font-size:14px}
+nav button.active{background:#e5f4f5;color:#066d79;font-weight:700}main{padding:28px;max-width:1450px;width:100%;margin:auto}
+section{display:none}section.active{display:block}.card{background:#fff;border:1px solid var(--border);border-radius:15px;padding:22px;margin:16px 0;box-shadow:0 3px 14px #16414d07}
+h1{font-size:25px;margin:0}h2{font-size:19px;margin:0 0 12px}h3{font-size:15px;margin:0 0 12px}
+.muted,small{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+label{display:block;font-size:12px;color:#42636e;font-weight:650;margin:8px 0 5px}input,select{width:100%;padding:10px;border:1px solid #cadadd;border-radius:9px;background:white;color:var(--ink);font:inherit}
+input[type=checkbox]{width:auto}button.action{background:var(--teal);border:1px solid var(--teal);color:#fff;border-radius:9px;padding:11px 17px;font-weight:650;cursor:pointer;margin:7px 7px 7px 0}
+button.secondary{background:#fff;color:var(--teal)}button:disabled{opacity:.45;cursor:not-allowed}
+.stat{border:1px solid var(--border);border-radius:12px;padding:14px;background:#f8fbfb}.stat strong{font-size:23px;display:block}
+.plot{width:100%;height:420px}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}td,th{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}th{background:#f3f8f9}
+#status{font-size:12px;border-radius:30px;padding:7px 12px;background:#fff2d9;color:#946100}#log{white-space:pre-wrap;color:#b43b38;margin-top:10px}
+@media(max-width:800px){.shell{grid-template-columns:1fr}aside{padding:8px;overflow:auto}nav{display:flex}nav button{white-space:nowrap}main{padding:14px}.grid,.two{grid-template-columns:1fr}header{padding:12px}}
+</style></head><body>
+<header><div class="brand">◈ NIR <span>Studio</span> <small>WEB / RESEARCH</small></div><div id="status">正在初始化计算引擎…</div></header>
+<div class="shell"><aside><nav id="nav">
+<button class="active" data-page="data">▤ 数据与光谱</button>
+<button data-page="model">⚙ 预处理与建模</button>
+<button data-page="eval">◉ 模型评价</button>
+<button data-page="predict">◇ 未知样品预测</button>
+<button data-page="save">▣ 模型管理</button>
+</nav><p class="muted" style="padding:16px">本地浏览器计算<br>数据无需上传服务器<br>Pyodide + scikit-learn</p></aside>
+<main>
+<section id="data" class="active"><h1>数据与光谱</h1><p class="muted">导入光谱数据、检查列结构并查看原始光谱曲线。</p>
+<div class="card"><h2>导入数据</h2><div class="grid two"><div><label>CSV / Excel 文件</label><input id="dataFile" type="file" accept=".csv,.xlsx,.xls"></div><div><label>内置数据</label><button class="action secondary" id="demo">加载 120 个模拟样品</button><button class="action secondary" id="demoDownload">下载演示 CSV</button></div></div>
+<p id="dataInfo" class="muted">尚未导入数据</p><div id="preview" class="tablewrap"></div></div>
+<div class="card"><h2>原始光谱</h2><div id="rawPlot" class="plot"></div></div></section>
+<section id="model"><h1>预处理与回归建模</h1><p class="muted">数据划分、预处理与特征选择均在 Python 科学计算环境中执行。</p>
+<div class="card"><div class="grid"><div><label>参考值列 (y)</label><select id="target"></select></div><div><label>样品 ID 列</label><select id="ident"></select></div><div><label>回归算法</label><select id="algo"><option>PLSR</option><option>PCR</option><option>SVR</option><option>Random Forest</option><option>Ridge</option><option>KNN</option><option>Extra Trees</option><option>Gradient Boosting</option></select></div>
+<div><label>光谱预处理</label><select id="pre"><option>SNV</option><option>None</option><option>MSC</option><option>SG smooth</option><option>SG 1st derivative</option><option>SG 2nd derivative</option><option>Detrend</option></select></div>
+<div><label>特征筛选</label><select id="selection"><option>None</option><option>SelectKBest</option><option>PLS-VIP</option></select></div>
+<div><label>筛选后特征数量</label><input id="k" type="number" min="2" value="30"></div>
+<div><label>PLS / PCA 潜变量数量</label><input id="comp" type="number" min="1" value="5"></div>
+<div><label>SG 窗口（奇数）</label><input id="window" type="number" min="3" step="2" value="11"></div>
+<div><label>测试集比例</label><select id="ratio"><option value=".2">20%</option><option value=".1">10%</option><option value=".3">30%</option><option value=".4">40%</option></select></div>
+<div><label>交叉验证折数</label><select id="folds"><option>5</option><option>3</option><option>10</option></select></div>
+<div><label>最小波长 (nm)，留空为全波段</label><input id="low" type="number" placeholder="自动"></div>
+<div><label>最大波长 (nm)，留空为全波段</label><input id="high" type="number" placeholder="自动"></div></div>
+<label><input type="checkbox" id="optimize"> 启用 GridSearchCV 网格搜索（计算时间较长）</label><div><button class="action secondary" id="previewPre">预览预处理光谱</button><button class="action" id="train">▶ 训练回归模型</button></div></div>
+<div class="card"><h2>光谱预处理效果</h2><div id="prePlot" class="plot"></div></div></section>
+<section id="eval"><h1>模型评价</h1><p class="muted">展示校正集、交叉验证与独立测试集评价结果。</p><div class="card"><div id="metrics" class="grid"></div><div id="metricTable" class="tablewrap"></div><p id="best" class="muted"></p></div>
+<div class="grid two"><div class="card"><h2>Reference vs Predicted</h2><div id="scatter" class="plot"></div></div><div class="card"><h2>Test residuals</h2><div id="residual" class="plot"></div></div></div>
+<div class="card"><h2>重要波长 / VIP</h2><div id="features"></div><div id="vipPlot" class="plot"></div><button class="action secondary" id="downloadTest">导出测试集预测 CSV</button></div></section>
+<section id="predict"><h1>未知样品预测</h1><div class="card"><h2>批量定量预测</h2><p class="muted">预测数据需包含与训练时完全一致的波长列名；允许附加 Sample ID 列。</p><label>待测光谱 CSV / Excel</label><input type="file" id="unknownFile" accept=".csv,.xlsx,.xls"><button class="action" id="predictBtn">开始预测</button><div id="predTable" class="tablewrap"></div><button class="action secondary" id="downloadPred">导出预测 CSV</button></div></section>
+<section id="save"><h1>模型管理</h1><div class="card"><h2>导出 / 导入模型</h2><p class="muted">模型采用 Python pickle 格式，仅加载由自己生成且可信的模型文件。恶意 pickle 文件可能执行任意代码。</p><button class="action" id="saveModel">下载模型文件</button><label>导入可信模型（.nir）</label><input type="file" id="modelFile" accept=".nir"><button class="action secondary" id="loadModel">加载模型</button><pre id="modelInfo"></pre></div></section>
+<div id="log" role="alert"></div>
+</main></div>
+<script src="app.js"></script></body></html>
